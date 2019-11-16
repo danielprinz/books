@@ -9,7 +9,7 @@ import com.danielprinz.udemy.books.InMemoryBookStore;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
@@ -24,7 +24,7 @@ public class JDBCMainVerticle extends AbstractVerticle {
   private JDBCBookRepository bookRepository;
 
   @Override
-  public void start(Future<Void> startFuture) throws Exception {
+  public void start(Promise<Void> start) throws Exception {
     LOG.debug("starting...");
     //Initialize Database Connection
     bookRepository = new JDBCBookRepository(vertx);
@@ -49,10 +49,10 @@ public class JDBCMainVerticle extends AbstractVerticle {
 
     vertx.createHttpServer().requestHandler(books).listen(8888, http -> {
       if (http.succeeded()) {
-        startFuture.complete();
+        start.complete();
         LOG.info("HTTP server started on port 8888");
       } else {
-        startFuture.fail(http.cause());
+        start.fail(http.cause());
       }
     });
   }

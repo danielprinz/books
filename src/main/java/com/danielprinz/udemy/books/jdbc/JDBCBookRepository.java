@@ -5,6 +5,7 @@ import java.util.List;
 import com.danielprinz.udemy.books.Book;
 
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -25,7 +26,7 @@ public class JDBCBookRepository {
   }
 
   public Future<JsonArray> getAll() {
-    final Future<JsonArray> getAll = Future.future();
+    final Promise<JsonArray> getAll = Promise.promise();
     sql.query("SELECT * FROM books", ar -> {
       if (ar.failed()){
         //Forward error
@@ -38,11 +39,11 @@ public class JDBCBookRepository {
       rows.forEach(result::add);
       getAll.complete(result);
     });
-    return getAll;
+    return getAll.future();
   }
 
   public Future<Void> add(final Book bookToAdd) {
-    final Future<Void> added = Future.future();
+    final Promise<Void> added = Promise.promise();
     final JsonArray params = new JsonArray().add(bookToAdd.getIsbn()).add(bookToAdd.getTitle());
     sql.updateWithParams("INSERT INTO books (isbn, title) VALUES (?, ?)", params, ar -> {
       if (ar.failed()){
@@ -58,11 +59,11 @@ public class JDBCBookRepository {
       //Return success
       added.complete();
     });
-    return added;
+    return added.future();
   }
 
   public Future<String> delete(final String isbn) {
-    final Future<String> deleted = Future.future();
+    final Promise<String> deleted = Promise.promise();
     final JsonArray params = new JsonArray().add(Long.parseLong(isbn));
     sql.updateWithParams("DELETE FROM books where books.isbn = ?", params, ar -> {
       if (ar.failed()){
@@ -78,6 +79,6 @@ public class JDBCBookRepository {
       //Return deleted isbn
       deleted.complete(isbn);
     });
-    return deleted;
+    return deleted.future();
   }
 }
