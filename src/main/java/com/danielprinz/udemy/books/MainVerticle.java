@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
@@ -20,7 +20,7 @@ public class MainVerticle extends AbstractVerticle {
   private InMemoryBookStore store = new InMemoryBookStore();
 
   @Override
-  public void start(Future<Void> startFuture) throws Exception {
+  public void start(Promise<Void> startFuture) throws Exception {
     LOG.debug("starting...");
     Router books = Router.router(vertx);
     books.route().handler(BodyHandler.create());
