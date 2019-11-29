@@ -138,6 +138,7 @@
                   <manifestEntries>
                     <Main-Class>io.vertx.core.Launcher</Main-Class>
                     <Main-Verticle>${main.verticle}</Main-Verticle>
+                    <Multi-Release>true</Multi-Release>
                   </manifestEntries>
                 </transformer>
                 <transformer
