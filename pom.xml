@@ -18,6 +18,7 @@
     <maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>
     <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
     <exec-maven-plugin.version>1.5.0</exec-maven-plugin.version>
+    <jib-maven-plugin.version>1.8.0</jib-maven-plugin.version>
 
     <vertx.version>3.7.1</vertx.version>
     <junit-jupiter.version>5.4.0</junit-jupiter.version>
@@ -123,6 +124,7 @@
         <version>${maven-compiler-plugin.version}</version>
       </plugin>
       <plugin>
+        <!-- Fat Jar is not needed when creating a docker image with jib -->
         <artifactId>maven-shade-plugin</artifactId>
         <version>${maven-shade-plugin.version}</version>
         <executions>
@@ -170,8 +172,38 @@
           </arguments>
         </configuration>
       </plugin>
+      <!-- Create Docker Image -->
+      <plugin>
+        <groupId>com.google.cloud.tools</groupId>
+        <artifactId>jib-maven-plugin</artifactId>
+        <version>${jib-maven-plugin.version}</version>
+        <configuration>
+          <from>
+            <image>amazoncorretto:8u232</image>
+          </from>
+          <to>
+            <image>localhost:5000/${project.groupId}-${project.artifactId}:${project.version}</image>
+          </to>
+          <container>
+            <mainClass>${main.verticle}</mainClass>
+            <jvmFlags>
+              <!-- send vertx logs to SLF4j -->
+              <jvmFlag>-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory</jvmFlag>
+            </jvmFlags>
+          </container>
+          <!-- Override "allowInsecureRegistries" only when used with a local registry!-->
+          <allowInsecureRegistries>true</allowInsecureRegistries>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>deploy</phase>
+            <goals>
+              <goal>build</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
-
 
 </project>
