@@ -20,12 +20,12 @@
     <exec-maven-plugin.version>1.5.0</exec-maven-plugin.version>
     <jib-maven-plugin.version>1.8.0</jib-maven-plugin.version>
 
-    <vertx.version>3.8.5</vertx.version>
-    <junit-jupiter.version>5.4.0</junit-jupiter.version>
+    <vertx.version>3.9.0</vertx.version>
+    <junit-jupiter.version>5.6.2</junit-jupiter.version>
     <slf4j-api.version>1.7.25</slf4j-api.version>
 
     <main.verticle>com.danielprinz.udemy.books.MainVerticle</main.verticle>
-    <postgresql.jdbc.version>42.2.6</postgresql.jdbc.version>
+    <postgresql.jdbc.version>42.2.12</postgresql.jdbc.version>
   </properties>
 
   <dependencyManagement>
@@ -179,7 +179,7 @@
         <version>${jib-maven-plugin.version}</version>
         <configuration>
           <from>
-            <image>amazoncorretto:8u232</image>
+            <image>amazoncorretto:8u242</image>
           </from>
           <to>
             <image>localhost:5000/${project.groupId}-${project.artifactId}:${project.version}</image>
