@@ -26,6 +26,7 @@
 
     <main.verticle>com.danielprinz.udemy.books.MainVerticle</main.verticle>
     <postgresql.jdbc.version>42.2.12</postgresql.jdbc.version>
+    <flyway.version>6.3.3</flyway.version>
   </properties>
 
   <dependencyManagement>
@@ -105,7 +106,7 @@
       <plugin>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-maven-plugin</artifactId>
-        <version>5.2.4</version>
+        <version>${flyway.version}</version>
         <configuration>
           <url>jdbc:postgresql://127.0.0.1/books</url>
           <user>postgres</user>

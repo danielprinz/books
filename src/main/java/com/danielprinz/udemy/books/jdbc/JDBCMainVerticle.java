@@ -60,7 +60,7 @@ public class JDBCMainVerticle extends AbstractVerticle {
   private void deleteBook(final Router books) {
     books.delete("/books/:isbn").handler(req -> {
       final String isbn = req.pathParam("isbn");
-      bookRepository.delete(isbn).setHandler(ar -> {
+      bookRepository.delete(isbn).onComplete(ar -> {
         if (ar.failed()){
           //Forward error
           req.fail(ar.cause());
@@ -127,7 +127,7 @@ public class JDBCMainVerticle extends AbstractVerticle {
       final JsonObject requestBody = req.getBodyAsJson();
       System.out.println("Request Body: " + requestBody);
       // Store
-      bookRepository.add(requestBody.mapTo(Book.class)).setHandler(ar -> {
+      bookRepository.add(requestBody.mapTo(Book.class)).onComplete(ar -> {
         if (ar.failed()){
           //Forward error
           req.fail(ar.cause());
@@ -144,7 +144,7 @@ public class JDBCMainVerticle extends AbstractVerticle {
 
   private void getAll(final Router books) {
     books.get("/books").handler(req -> {
-      bookRepository.getAll().setHandler(ar -> {
+      bookRepository.getAll().onComplete(ar -> {
         if (ar.failed()){
           //Forward error
           req.fail(ar.cause());
