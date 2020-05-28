@@ -20,13 +20,15 @@
     <exec-maven-plugin.version>1.5.0</exec-maven-plugin.version>
     <jib-maven-plugin.version>1.8.0</jib-maven-plugin.version>
 
-    <vertx.version>3.9.0</vertx.version>
+    <vertx.version>3.9.1</vertx.version>
     <junit-jupiter.version>5.6.2</junit-jupiter.version>
     <slf4j-api.version>1.7.25</slf4j-api.version>
 
     <main.verticle>com.danielprinz.udemy.books.MainVerticle</main.verticle>
     <postgresql.jdbc.version>42.2.12</postgresql.jdbc.version>
     <flyway.version>6.3.3</flyway.version>
+    <kafka-junit5.version>3.2.1</kafka-junit5.version>
+    <kafka.version>2.4.0</kafka.version>
   </properties>
 
   <dependencyManagement>
@@ -82,7 +84,23 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
+      <artifactId>vertx-kafka-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
       <artifactId>vertx-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.salesforce.kafka.test</groupId>
+      <artifactId>kafka-junit5</artifactId>
+      <version>${kafka-junit5.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka_2.12</artifactId>
+      <version>${kafka.version}</version>
       <scope>test</scope>
     </dependency>
 
