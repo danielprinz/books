@@ -1,7 +1,5 @@
 package com.danielprinz.udemy.books.jdbc;
 
-import java.util.List;
-
 import com.danielprinz.udemy.books.Book;
 
 import io.vertx.core.Future;
@@ -11,6 +9,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.jdbc.JDBCClient;
 import io.vertx.ext.sql.SQLClient;
+import io.vertx.ext.sql.SQLRowStream;
 
 public class JDBCBookRepository {
 
@@ -25,19 +24,16 @@ public class JDBCBookRepository {
     sql = JDBCClient.createShared(vertx, config);
   }
 
-  public Future<JsonArray> getAll() {
-    final Promise<JsonArray> getAll = Promise.promise();
-    sql.query("SELECT * FROM books", ar -> {
+  public Future<SQLRowStream> getAll() {
+    final Promise<SQLRowStream> getAll = Promise.promise();
+    sql.queryStream("SELECT * FROM books", ar -> {
       if (ar.failed()){
         //Forward error
         getAll.fail(ar.cause());
         return;
       }
       //Return result
-      final List<JsonObject> rows = ar.result().getRows();
-      final JsonArray result = new JsonArray();
-      rows.forEach(result::add);
-      getAll.complete(result);
+      getAll.complete(ar.result());
     });
     return getAll.future();
   }

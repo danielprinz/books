@@ -12,7 +12,9 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.sql.SQLRowStream;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -151,11 +153,29 @@ public class JDBCMainVerticle extends AbstractVerticle {
           return;
         }
         // Return response
-        req.response()
+        final HttpServerResponse response = req.response()
           .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
-          .end(ar.result().encode());
+          .setChunked(true);
+        final SQLRowStream sqlRowStream = ar.result();
+        sqlRowStream
+          .handler(chunk ->
+            response.write(chunk.encode())
+          )
+          .endHandler(end ->
+            response.end()
+          );
       });
     });
+  }
+
+  /**
+   * Generates some data
+   */
+  private void addBooks() {
+    for (int i = 0; i < 10000; i++) {
+      bookRepository.add(new Book(i, "random"));
+      LOG.info("Add book {}", i);
+    }
   }
 
   public static void main(String[] args) {
