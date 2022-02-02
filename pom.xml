@@ -25,7 +25,7 @@
     <slf4j-api.version>1.7.25</slf4j-api.version>
 
     <main.verticle>com.danielprinz.udemy.books.MainVerticle</main.verticle>
-    <postgresql.jdbc.version>42.2.12</postgresql.jdbc.version>
+    <postgresql.jdbc.version>42.2.25</postgresql.jdbc.version>
     <flyway.version>6.3.3</flyway.version>
   </properties>
 
