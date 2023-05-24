@@ -1,8 +1,5 @@
 package com.danielprinz.udemy.books;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
@@ -13,16 +10,18 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MainVerticle extends AbstractVerticle {
 
   private static final Logger LOG = LoggerFactory.getLogger(MainVerticle.class);
-  private InMemoryBookStore store = new InMemoryBookStore();
+  private final InMemoryBookStore store = new InMemoryBookStore();
 
   @Override
   public void start(Promise<Void> startFuture) throws Exception {
     LOG.debug("starting...");
-    Router books = Router.router(vertx);
+    final Router books = Router.router(vertx);
     books.route().handler(BodyHandler.create());
     books.route("/*").handler(StaticHandler.create());
 
@@ -53,7 +52,7 @@ public class MainVerticle extends AbstractVerticle {
     books.delete("/books/:isbn").handler(req -> {
       final String isbn = req.pathParam("isbn");
       final Book deletedBook = store.delete(isbn);
-      if (null == deletedBook){
+      if (null == deletedBook) {
         //Book not found
         req.response()
           .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
@@ -80,7 +79,7 @@ public class MainVerticle extends AbstractVerticle {
   private void registerErrorHandler(final Router books) {
     books.errorHandler(500, event -> {
       LOG.error("Failed: ", event.failure());
-      if (event.failure() instanceof  IllegalArgumentException) {
+      if (event.failure() instanceof IllegalArgumentException) {
         event.response()
           .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
           .setStatusCode(HttpResponseStatus.BAD_REQUEST.code())
