@@ -11,19 +11,19 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-    <maven-shade-plugin.version>3.4.1</maven-shade-plugin.version>
-    <maven-surefire-plugin.version>3.1.0</maven-surefire-plugin.version>
-    <exec-maven-plugin.version>3.1.0</exec-maven-plugin.version>
-    <jib-maven-plugin.version>3.3.2</jib-maven-plugin.version>
+    <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+    <maven-shade-plugin.version>3.6.1</maven-shade-plugin.version>
+    <maven-surefire-plugin.version>3.5.5</maven-surefire-plugin.version>
+    <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
+    <jib-maven-plugin.version>3.5.1</jib-maven-plugin.version>
 
-    <vertx.version>4.4.2</vertx.version>
-    <junit-jupiter.version>5.9.3</junit-jupiter.version>
-    <logback-classic.version>1.2.12</logback-classic.version>
+    <vertx.version>4.5.25</vertx.version>
+    <junit-jupiter.version>5.14.3</junit-jupiter.version>
+    <logback-classic.version>1.5.32</logback-classic.version>
 
     <main.verticle>com.danielprinz.udemy.books.MainVerticle</main.verticle>
-    <postgresql.jdbc.version>42.6.0</postgresql.jdbc.version>
-    <flyway.version>9.19.0</flyway.version>
+    <postgresql.jdbc.version>42.7.10</postgresql.jdbc.version>
+    <flyway.version>9.22.3</flyway.version>
   </properties>
 
   <dependencyManagement>
@@ -161,7 +161,7 @@
         <version>${jib-maven-plugin.version}</version>
         <configuration>
           <from>
-            <image>amazoncorretto:8u242</image>
+            <image>amazoncorretto:17</image>
           </from>
           <to>
             <image>localhost:5000/${project.groupId}-${project.artifactId}:${project.version}</image>
