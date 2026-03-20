@@ -8,7 +8,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -26,7 +26,7 @@ import io.vertx.junit5.VertxTestContext;
 public class JDBCMainVerticleTest {
 
   @Container
-  public static PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:15-alpine");
+  public static PostgreSQLContainer container = new PostgreSQLContainer("postgres:17-alpine");
 
   static {
     container.withDatabaseName("books")

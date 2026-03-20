@@ -1,7 +1,5 @@
 package com.danielprinz.udemy.books.jdbc;
 
-import java.util.List;
-
 import com.danielprinz.udemy.books.Book;
 
 import io.vertx.core.Future;
