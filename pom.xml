@@ -24,6 +24,7 @@
     <main.verticle>com.danielprinz.udemy.books.MainVerticle</main.verticle>
     <postgresql.jdbc.version>42.7.10</postgresql.jdbc.version>
     <flyway.version>9.22.3</flyway.version>
+    <testcontainers.version>1.19.3</testcontainers.version>
   </properties>
 
   <dependencyManagement>
@@ -74,6 +75,35 @@
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
       <version>${junit-jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Testcontainers -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Web Client for Testing -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-web-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Flyway for programmatic test migrations -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+      <version>${flyway.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -17,12 +17,13 @@ public class JDBCBookRepository {
   private SQLClient sql;
 
   public JDBCBookRepository(final Vertx vertx) {
-    final JsonObject config = new JsonObject();
-    config.put("url", "jdbc:postgresql://127.0.0.1/books");
-    config.put("driver_class", "org.postgresql.Driver");
-    config.put("user", "postgres");
-    config.put("password", "secret"); //For production manage password in config file or through env
-    sql = JDBCClient.createShared(vertx, config);
+    final JsonObject config = vertx.getOrCreateContext().config();
+    final JsonObject dbConfig = new JsonObject();
+    dbConfig.put("url", config.getString("url", "jdbc:postgresql://127.0.0.1/books"));
+    dbConfig.put("driver_class", config.getString("driver_class", "org.postgresql.Driver"));
+    dbConfig.put("user", config.getString("user", "postgres"));
+    dbConfig.put("password", config.getString("password", "secret"));
+    sql = JDBCClient.createShared(vertx, dbConfig);
   }
 
   public Future<JsonArray> getAll() {
