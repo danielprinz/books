@@ -19,7 +19,7 @@ public class TestMainVerticle {
 
   @BeforeEach
   void deploy_verticle(Vertx vertx, VertxTestContext testContext) {
-    vertx.deployVerticle(new MainVerticle(), testContext.succeeding(id -> testContext.completeNow()));
+    vertx.deployVerticle(new MainVerticle()).onComplete(testContext.succeeding(id -> testContext.completeNow()));
   }
 
   @Test
@@ -31,7 +31,7 @@ public class TestMainVerticle {
 
     client.post(8888, "localhost", "/books")
       .as(BodyCodec.jsonObject())
-      .sendJsonObject(newBook, testContext.succeeding(response -> testContext.verify(() -> {
+      .sendJsonObject(newBook).onComplete(testContext.succeeding(response -> testContext.verify(() -> {
         assertEquals(201, response.statusCode());
         JsonObject created = response.body();
         assertEquals(111222333L, created.getLong("isbn"));
@@ -46,10 +46,10 @@ public class TestMainVerticle {
     
     JsonObject newBook = new JsonObject().put("isbn", 999999999L).put("title", "Test Book");
     client.post(8888, "localhost", "/books")
-      .sendJsonObject(newBook, testContext.succeeding(postResponse -> {
+      .sendJsonObject(newBook).onComplete(testContext.succeeding(postResponse -> {
         client.get(8888, "localhost", "/books")
           .as(BodyCodec.jsonArray())
-          .send(testContext.succeeding(response -> testContext.verify(() -> {
+          .send().onComplete(testContext.succeeding(response -> testContext.verify(() -> {
             assertEquals(200, response.statusCode());
             JsonArray books = response.body();
             assertEquals(3, books.size()); // 2 default + 1 new
@@ -64,11 +64,11 @@ public class TestMainVerticle {
     
     JsonObject newBook = new JsonObject().put("isbn", 123L).put("title", "Old Title");
     client.post(8888, "localhost", "/books")
-      .sendJsonObject(newBook, testContext.succeeding(postResponse -> {
+      .sendJsonObject(newBook).onComplete(testContext.succeeding(postResponse -> {
         JsonObject updatedBook = new JsonObject().put("isbn", 123L).put("title", "New Title");
         client.put(8888, "localhost", "/books/123")
           .as(BodyCodec.jsonObject())
-          .sendJsonObject(updatedBook, testContext.succeeding(response -> testContext.verify(() -> {
+          .sendJsonObject(updatedBook).onComplete(testContext.succeeding(response -> testContext.verify(() -> {
             assertEquals(200, response.statusCode());
             JsonObject returnedBook = response.body();
             assertEquals(123L, returnedBook.getLong("isbn"));
@@ -84,10 +84,10 @@ public class TestMainVerticle {
     
     JsonObject newBook = new JsonObject().put("isbn", 456L).put("title", "To Be Deleted");
     client.post(8888, "localhost", "/books")
-      .sendJsonObject(newBook, testContext.succeeding(postResponse -> {
+      .sendJsonObject(newBook).onComplete(testContext.succeeding(postResponse -> {
         client.delete(8888, "localhost", "/books/456")
           .as(BodyCodec.jsonObject())
-          .send(testContext.succeeding(response -> testContext.verify(() -> {
+          .send().onComplete(testContext.succeeding(response -> testContext.verify(() -> {
             assertEquals(200, response.statusCode());
             JsonObject deletedBook = response.body();
             assertEquals(456L, deletedBook.getLong("isbn"));

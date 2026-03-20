@@ -50,7 +50,7 @@ public class JDBCMainVerticleTest {
         .put("password", container.getPassword());
 
     DeploymentOptions options = new DeploymentOptions().setConfig(config);
-    vertx.deployVerticle(new JDBCMainVerticle(), options, testContext.succeeding(id -> testContext.completeNow()));
+    vertx.deployVerticle(new JDBCMainVerticle(), options).onComplete(testContext.succeeding(id -> testContext.completeNow()));
   }
 
   @Test
@@ -59,7 +59,7 @@ public class JDBCMainVerticleTest {
 
     client.get(8888, "localhost", "/books")
         .as(BodyCodec.jsonArray())
-        .send(testContext.succeeding(response -> testContext.verify(() -> {
+        .send().onComplete(testContext.succeeding(response -> testContext.verify(() -> {
           assertEquals(200, response.statusCode());
           JsonArray books = response.body();
           assertNotNull(books);
@@ -76,7 +76,7 @@ public class JDBCMainVerticleTest {
 
     client.post(8888, "localhost", "/books")
         .as(BodyCodec.jsonObject())
-        .sendJsonObject(newBook, testContext.succeeding(response -> testContext.verify(() -> {
+        .sendJsonObject(newBook).onComplete(testContext.succeeding(response -> testContext.verify(() -> {
           assertEquals(201, response.statusCode());
           JsonObject created = response.body();
           assertEquals("123456789", created.getString("isbn"));

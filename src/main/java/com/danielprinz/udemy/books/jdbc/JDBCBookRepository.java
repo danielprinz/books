@@ -9,35 +9,42 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.jdbc.JDBCClient;
-import io.vertx.ext.sql.SQLClient;
+import io.vertx.jdbcclient.JDBCConnectOptions;
+import io.vertx.jdbcclient.JDBCPool;
+import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.Tuple;
 
 public class JDBCBookRepository {
 
-  private SQLClient sql;
+  private Pool pool;
 
   public JDBCBookRepository(final Vertx vertx) {
     final JsonObject config = vertx.getOrCreateContext().config();
-    final JsonObject dbConfig = new JsonObject();
-    dbConfig.put("url", config.getString("url", "jdbc:postgresql://127.0.0.1/books"));
-    dbConfig.put("driver_class", config.getString("driver_class", "org.postgresql.Driver"));
-    dbConfig.put("user", config.getString("user", "postgres"));
-    dbConfig.put("password", config.getString("password", "secret"));
-    sql = JDBCClient.createShared(vertx, dbConfig);
+    JDBCConnectOptions connectOptions = new JDBCConnectOptions()
+      .setJdbcUrl(config.getString("url", "jdbc:postgresql://127.0.0.1/books"))
+      .setUser(config.getString("user", "postgres"))
+      .setPassword(config.getString("password", "secret"));
+    PoolOptions poolOptions = new PoolOptions().setMaxSize(16);
+    pool = JDBCPool.pool(vertx, connectOptions, poolOptions);
   }
 
   public Future<JsonArray> getAll() {
     final Promise<JsonArray> getAll = Promise.promise();
-    sql.query("SELECT * FROM books", ar -> {
+    pool.query("SELECT * FROM books").execute().onComplete(ar -> {
       if (ar.failed()){
         //Forward error
         getAll.fail(ar.cause());
         return;
       }
       //Return result
-      final List<JsonObject> rows = ar.result().getRows();
+      final RowSet<Row> rows = ar.result();
       final JsonArray result = new JsonArray();
-      rows.forEach(result::add);
+      for (Row row : rows) {
+        result.add(row.toJson());
+      }
       getAll.complete(result);
     });
     return getAll.future();
@@ -45,16 +52,16 @@ public class JDBCBookRepository {
 
   public Future<Void> add(final Book bookToAdd) {
     final Promise<Void> added = Promise.promise();
-    final JsonArray params = new JsonArray().add(bookToAdd.getIsbn()).add(bookToAdd.getTitle());
-    sql.updateWithParams("INSERT INTO books (isbn, title) VALUES (?, ?)", params, ar -> {
+    final Tuple params = Tuple.of(bookToAdd.getIsbn(), bookToAdd.getTitle());
+    pool.preparedQuery("INSERT INTO books (isbn, title) VALUES (?, ?)").execute(params).onComplete(ar -> {
       if (ar.failed()){
         //Forward error
         added.fail(ar.cause());
         return;
       }
       //Return failure if updated count is not 1
-      if (ar.result().getUpdated() != 1) {
-        added.fail(new IllegalStateException("Wrong update count on insert " + ar.result()));
+      if (ar.result().rowCount() != 1) {
+        added.fail(new IllegalStateException("Wrong update count on insert " + ar.result().rowCount()));
         return;
       }
       //Return success
@@ -65,15 +72,15 @@ public class JDBCBookRepository {
 
   public Future<String> delete(final String isbn) {
     final Promise<String> deleted = Promise.promise();
-    final JsonArray params = new JsonArray().add(Long.parseLong(isbn));
-    sql.updateWithParams("DELETE FROM books where books.isbn = ?", params, ar -> {
+    final Tuple params = Tuple.of(Long.parseLong(isbn));
+    pool.preparedQuery("DELETE FROM books where books.isbn = ?").execute(params).onComplete(ar -> {
       if (ar.failed()){
         //Forward error
         deleted.fail(ar.cause());
         return;
       }
       //Nothing was deleted
-      if (ar.result().getUpdated() == 0) {
+      if (ar.result().rowCount() == 0) {
         deleted.complete();
         return;
       }

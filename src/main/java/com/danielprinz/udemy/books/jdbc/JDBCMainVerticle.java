@@ -47,7 +47,7 @@ public class JDBCMainVerticle extends AbstractVerticle {
 
     registerErrorHandler(books);
 
-    vertx.createHttpServer().requestHandler(books).listen(8888, http -> {
+    vertx.createHttpServer().requestHandler(books).listen(8888).onComplete(http -> {
       if (http.succeeded()) {
         start.complete();
         LOG.info("HTTP server started on port 8888");
