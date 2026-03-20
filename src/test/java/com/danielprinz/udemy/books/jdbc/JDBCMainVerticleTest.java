@@ -17,7 +17,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.predicate.ResponsePredicate;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -27,10 +26,13 @@ import io.vertx.junit5.VertxTestContext;
 public class JDBCMainVerticleTest {
 
   @Container
-  public static PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:15-alpine")
-      .withDatabaseName("books")
-      .withUsername("postgres")
-      .withPassword("secret");
+  public static PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:15-alpine");
+
+  static {
+    container.withDatabaseName("books")
+        .withUsername("postgres")
+        .withPassword("secret");
+  }
 
   @BeforeAll
   static void runMigrations() {
@@ -56,9 +58,9 @@ public class JDBCMainVerticleTest {
     WebClient client = WebClient.create(vertx);
 
     client.get(8888, "localhost", "/books")
-        .expect(ResponsePredicate.SC_OK)
         .as(BodyCodec.jsonArray())
         .send(testContext.succeeding(response -> testContext.verify(() -> {
+          assertEquals(200, response.statusCode());
           JsonArray books = response.body();
           assertNotNull(books);
           testContext.completeNow();
@@ -73,9 +75,9 @@ public class JDBCMainVerticleTest {
         .put("title", "Testcontainers Book");
 
     client.post(8888, "localhost", "/books")
-        .expect(ResponsePredicate.SC_CREATED)
         .as(BodyCodec.jsonObject())
         .sendJsonObject(newBook, testContext.succeeding(response -> testContext.verify(() -> {
+          assertEquals(201, response.statusCode());
           JsonObject created = response.body();
           assertEquals("123456789", created.getString("isbn"));
           assertEquals("Testcontainers Book", created.getString("title"));

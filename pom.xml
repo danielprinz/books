@@ -132,7 +132,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven-compiler-plugin.version}</version>
         <configuration>
-          <release>17</release>
+          <release>21</release>
         </configuration>
       </plugin>
       <plugin>
@@ -191,7 +191,7 @@
         <version>${jib-maven-plugin.version}</version>
         <configuration>
           <from>
-            <image>amazoncorretto:17</image>
+            <image>amazoncorretto:25</image>
           </from>
           <to>
             <image>localhost:5000/${project.groupId}-${project.artifactId}:${project.version}</image>

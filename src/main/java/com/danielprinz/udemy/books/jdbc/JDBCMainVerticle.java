@@ -112,7 +112,7 @@ public class JDBCMainVerticle extends AbstractVerticle {
   private void updateBook(final Router books) {
     books.put("/books/:isbn").handler(req -> {
       final String isbn = req.pathParam("isbn");
-      final JsonObject requestBody = req.getBodyAsJson();
+      final JsonObject requestBody = req.body().asJsonObject();
       final Book updatedBook = store.update(isbn, requestBody.mapTo(Book.class));
       //Return response
       req.response()
@@ -124,7 +124,7 @@ public class JDBCMainVerticle extends AbstractVerticle {
   private void createBook(final Router books) {
     books.post("/books").handler(req -> {
       // Read body
-      final JsonObject requestBody = req.getBodyAsJson();
+      final JsonObject requestBody = req.body().asJsonObject();
       System.out.println("Request Body: " + requestBody);
       // Store
       bookRepository.add(requestBody.mapTo(Book.class)).onComplete(ar -> {
