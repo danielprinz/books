@@ -19,8 +19,7 @@ public class JDBCBookRepository {
 
   private Pool pool;
 
-  public JDBCBookRepository(final Vertx vertx) {
-    final JsonObject config = vertx.getOrCreateContext().config();
+  public JDBCBookRepository(final Vertx vertx, final JsonObject config) {
     JDBCConnectOptions connectOptions = new JDBCConnectOptions()
       .setJdbcUrl(config.getString("url", "jdbc:postgresql://127.0.0.1/books"))
       .setUser(config.getString("user", "postgres"))

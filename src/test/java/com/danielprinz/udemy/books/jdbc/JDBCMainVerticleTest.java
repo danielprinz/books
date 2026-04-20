@@ -47,7 +47,8 @@ public class JDBCMainVerticleTest {
     JsonObject config = new JsonObject()
         .put("url", container.getJdbcUrl())
         .put("user", container.getUsername())
-        .put("password", container.getPassword());
+        .put("password", container.getPassword())
+        .put("dev_mode", true);
 
     DeploymentOptions options = new DeploymentOptions().setConfig(config);
     vertx.deployVerticle(new JDBCMainVerticle(), options).onComplete(testContext.succeeding(id -> testContext.completeNow()));
@@ -63,6 +64,7 @@ public class JDBCMainVerticleTest {
           assertEquals(200, response.statusCode());
           JsonArray books = response.body();
           assertNotNull(books);
+          assertEquals(20, books.size());
           testContext.completeNow();
         })));
   }

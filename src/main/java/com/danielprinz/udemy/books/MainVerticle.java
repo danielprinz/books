@@ -1,8 +1,13 @@
 package com.danielprinz.udemy.books;
 
+import com.danielprinz.udemy.books.jdbc.JDBCMainVerticle;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.vertx.config.ConfigRetriever;
+import io.vertx.config.ConfigRetrieverOptions;
+import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
@@ -131,6 +136,33 @@ public class MainVerticle extends AbstractVerticle {
 
   public static void main(String[] args) {
     Vertx vertx = Vertx.vertx();
-    vertx.deployVerticle(new MainVerticle());
+
+    if (Boolean.parseBoolean(System.getenv("JDBC"))) {
+      ConfigRetriever retriever = ConfigRetriever.create(vertx, new ConfigRetrieverOptions()
+        .addStore(new ConfigStoreOptions()
+          .setType("file")
+          .setFormat("yaml")
+          .setOptional(true)
+          .setConfig(new JsonObject().put("path", "application.yml")))
+        .addStore(new ConfigStoreOptions()
+          .setType("file")
+          .setFormat("yaml")
+          .setOptional(true)
+          .setConfig(new JsonObject().put("path", "src/main/resources/application.yml")))
+        .addStore(new ConfigStoreOptions()
+          .setType("env")));
+
+      retriever.getConfig().onComplete(ar -> {
+        if (ar.failed()) {
+          LOG.error("Failed to load configuration", ar.cause());
+          return;
+        }
+        final JsonObject config = ar.result().put("dev_mode", true);
+        vertx.deployVerticle(new JDBCMainVerticle(),
+          new DeploymentOptions().setConfig(config));
+      });
+    } else {
+      vertx.deployVerticle(new MainVerticle());
+    }
   }
 }
