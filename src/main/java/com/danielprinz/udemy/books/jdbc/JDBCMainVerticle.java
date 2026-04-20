@@ -1,33 +1,45 @@
 package com.danielprinz.udemy.books.jdbc;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.danielprinz.udemy.books.Book;
-import com.danielprinz.udemy.books.InMemoryBookStore;
-
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
+import io.vertx.core.Future;
+import io.vertx.core.VerticleBase;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class JDBCMainVerticle extends AbstractVerticle {
+public class JDBCMainVerticle extends VerticleBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(JDBCMainVerticle.class);
-  private InMemoryBookStore store = new InMemoryBookStore();
   private JDBCBookRepository bookRepository;
 
   @Override
-  public void start(Promise<Void> start) throws Exception {
+  public Future<?> start() throws Exception {
     LOG.debug("starting...");
+
+    final JsonObject config = config();
+
+    final FluentConfiguration flywayConfig = Flyway.configure()
+      .dataSource(config.getString("url"),
+        config.getString("user"),
+        config.getString("password"));
+
+    // Add some test data - later on we can make this configurable
+    LOG.info("Running Flyway and add some test data...");
+    flywayConfig.locations("db/migration", "db/test_data");
+
+    flywayConfig.load().migrate();
+    LOG.info("Flyway migration completed. Starting HTTP server...");
+
     //Initialize Database Connection
-    bookRepository = new JDBCBookRepository(vertx);
+    bookRepository = new JDBCBookRepository(vertx, config);
 
     //Initialize Web Server Routes
     Router books = Router.router(vertx);
@@ -47,21 +59,15 @@ public class JDBCMainVerticle extends AbstractVerticle {
 
     registerErrorHandler(books);
 
-    vertx.createHttpServer().requestHandler(books).listen(8888, http -> {
-      if (http.succeeded()) {
-        start.complete();
-        LOG.info("HTTP server started on port 8888");
-      } else {
-        start.fail(http.cause());
-      }
-    });
+    return vertx.createHttpServer().requestHandler(books).listen(8888)
+      .onSuccess(http -> LOG.info("HTTP server started on port 8888"));
   }
 
   private void deleteBook(final Router books) {
     books.delete("/books/:isbn").handler(req -> {
       final String isbn = req.pathParam("isbn");
       bookRepository.delete(isbn).onComplete(ar -> {
-        if (ar.failed()){
+        if (ar.failed()) {
           //Forward error
           req.fail(ar.cause());
           return;
@@ -86,16 +92,29 @@ public class JDBCMainVerticle extends AbstractVerticle {
   private void getBookByISBN(final Router books) {
     books.get("/books/:isbn").handler(req -> {
       final String isbn = req.pathParam("isbn");
-      req.response()
-        .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
-        .end(JsonObject.mapFrom(store.get(isbn)).encode());
+      bookRepository.get(isbn).onComplete(ar -> {
+        if (ar.failed()) {
+          req.fail(ar.cause());
+          return;
+        }
+        if (ar.result() == null) {
+          req.response()
+            .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
+            .setStatusCode(HttpResponseStatus.NOT_FOUND.code())
+            .end(new JsonObject().put("error", "Book not found!").encode());
+        } else {
+          req.response()
+            .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
+            .end(ar.result().encode());
+        }
+      });
     });
   }
 
   private void registerErrorHandler(final Router books) {
     books.errorHandler(500, event -> {
       LOG.error("Failed: ", event.failure());
-      if (event.failure() instanceof  IllegalArgumentException) {
+      if (event.failure() instanceof IllegalArgumentException) {
         event.response()
           .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
           .setStatusCode(HttpResponseStatus.BAD_REQUEST.code())
@@ -112,23 +131,34 @@ public class JDBCMainVerticle extends AbstractVerticle {
   private void updateBook(final Router books) {
     books.put("/books/:isbn").handler(req -> {
       final String isbn = req.pathParam("isbn");
-      final JsonObject requestBody = req.getBodyAsJson();
-      final Book updatedBook = store.update(isbn, requestBody.mapTo(Book.class));
-      //Return response
-      req.response()
-        .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
-        .end(JsonObject.mapFrom(updatedBook).encode());
+      final JsonObject requestBody = req.body().asJsonObject();
+      bookRepository.update(isbn, requestBody.mapTo(Book.class)).onComplete(ar -> {
+        if (ar.failed()) {
+          req.fail(ar.cause());
+          return;
+        }
+        if (ar.result() == null) {
+          req.response()
+            .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
+            .setStatusCode(HttpResponseStatus.NOT_FOUND.code())
+            .end(new JsonObject().put("error", "Book not found!").encode());
+        } else {
+          req.response()
+            .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
+            .end(ar.result().encode());
+        }
+      });
     });
   }
 
   private void createBook(final Router books) {
     books.post("/books").handler(req -> {
       // Read body
-      final JsonObject requestBody = req.getBodyAsJson();
+      final JsonObject requestBody = req.body().asJsonObject();
       System.out.println("Request Body: " + requestBody);
       // Store
       bookRepository.add(requestBody.mapTo(Book.class)).onComplete(ar -> {
-        if (ar.failed()){
+        if (ar.failed()) {
           //Forward error
           req.fail(ar.cause());
           return;
@@ -145,7 +175,7 @@ public class JDBCMainVerticle extends AbstractVerticle {
   private void getAll(final Router books) {
     books.get("/books").handler(req -> {
       bookRepository.getAll().onComplete(ar -> {
-        if (ar.failed()){
+        if (ar.failed()) {
           //Forward error
           req.fail(ar.cause());
           return;
@@ -158,8 +188,4 @@ public class JDBCMainVerticle extends AbstractVerticle {
     });
   }
 
-  public static void main(String[] args) {
-    Vertx vertx = Vertx.vertx();
-    vertx.deployVerticle(new JDBCMainVerticle());
-  }
 }

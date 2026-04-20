@@ -1,9 +1,14 @@
 package com.danielprinz.udemy.books;
 
+import com.danielprinz.udemy.books.jdbc.JDBCMainVerticle;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Promise;
+import io.vertx.config.ConfigRetriever;
+import io.vertx.config.ConfigRetrieverOptions;
+import io.vertx.config.ConfigStoreOptions;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
+import io.vertx.core.VerticleBase;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
@@ -13,13 +18,13 @@ import io.vertx.ext.web.handler.StaticHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MainVerticle extends AbstractVerticle {
+public class MainVerticle extends VerticleBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(MainVerticle.class);
   private final InMemoryBookStore store = new InMemoryBookStore();
 
   @Override
-  public void start(Promise<Void> startFuture) throws Exception {
+  public Future<?> start() throws Exception {
     LOG.debug("starting...");
     final Router books = Router.router(vertx);
     books.route().handler(BodyHandler.create());
@@ -38,14 +43,8 @@ public class MainVerticle extends AbstractVerticle {
 
     registerErrorHandler(books);
 
-    vertx.createHttpServer().requestHandler(books).listen(8888, http -> {
-      if (http.succeeded()) {
-        startFuture.complete();
-        LOG.info("HTTP server started on port 8888");
-      } else {
-        startFuture.fail(http.cause());
-      }
-    });
+    return vertx.createHttpServer().requestHandler(books).listen(8888)
+      .onSuccess(http -> LOG.info("HTTP server started on port 8888"));
   }
 
   private void deleteBook(final Router books) {
@@ -96,7 +95,7 @@ public class MainVerticle extends AbstractVerticle {
   private void updateBook(final Router books) {
     books.put("/books/:isbn").handler(req -> {
       final String isbn = req.pathParam("isbn");
-      final JsonObject requestBody = req.getBodyAsJson();
+      final JsonObject requestBody = req.body().asJsonObject();
       final Book updatedBook = store.update(isbn, requestBody.mapTo(Book.class));
       //Return response
       req.response()
@@ -108,7 +107,7 @@ public class MainVerticle extends AbstractVerticle {
   private void createBook(final Router books) {
     books.post("/books").handler(req -> {
       // Read body
-      final JsonObject requestBody = req.getBodyAsJson();
+      final JsonObject requestBody = req.body().asJsonObject();
       System.out.println("Request Body: " + requestBody);
       // Store
       store.add(requestBody.mapTo(Book.class));
@@ -129,8 +128,39 @@ public class MainVerticle extends AbstractVerticle {
     });
   }
 
-  public static void main(String[] args) {
+  static void main(String[] args) {
     Vertx vertx = Vertx.vertx();
-    vertx.deployVerticle(new MainVerticle());
+
+    if (Boolean.parseBoolean(System.getenv("JDBC"))) {
+      deployJDBCMainVerticle(vertx);
+    } else {
+      vertx.deployVerticle(new MainVerticle());
+    }
+  }
+
+  private static void deployJDBCMainVerticle(Vertx vertx) {
+    ConfigRetriever retriever = ConfigRetriever.create(vertx, new ConfigRetrieverOptions()
+      .addStore(new ConfigStoreOptions()
+        .setType("file")
+        .setFormat("yaml")
+        .setOptional(true)
+        .setConfig(new JsonObject().put("path", "application.yml")))
+      .addStore(new ConfigStoreOptions()
+        .setType("file")
+        .setFormat("yaml")
+        .setOptional(true)
+        .setConfig(new JsonObject().put("path", "src/main/resources/application.yml")))
+      .addStore(new ConfigStoreOptions()
+        .setType("env")));
+
+    retriever.getConfig().onComplete(ar -> {
+      if (ar.failed()) {
+        LOG.error("Failed to load configuration", ar.cause());
+        return;
+      }
+      final JsonObject config = ar.result();
+      vertx.deployVerticle(new JDBCMainVerticle(),
+        new DeploymentOptions().setConfig(config));
+    });
   }
 }

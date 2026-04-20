@@ -1,16 +1,20 @@
-version: '3.7'
-
 services:
 
   db:
-    image: postgres:14-alpine
+    image: postgres:17.9-alpine
     # Use postgres/secret user/password credentials
     environment:
       POSTGRES_PASSWORD: secret
+      POSTGRES_DB: books
     ports:
       - 5432:5432
+    volumes:
+      - books-db-data:/var/lib/postgresql/data
 
   adminer:
     image: adminer
     ports:
       - 8080:8080
+
+volumes:
+  books-db-data:

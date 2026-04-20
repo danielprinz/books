@@ -1,10 +1,16 @@
 package com.danielprinz.udemy.books;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 
@@ -13,11 +19,80 @@ public class TestMainVerticle {
 
   @BeforeEach
   void deploy_verticle(Vertx vertx, VertxTestContext testContext) {
-    vertx.deployVerticle(new MainVerticle(), testContext.succeeding(id -> testContext.completeNow()));
+    vertx.deployVerticle(new MainVerticle()).onComplete(testContext.succeeding(id -> testContext.completeNow()));
   }
 
   @Test
-  void verticle_deployed(Vertx vertx, VertxTestContext testContext) throws Throwable {
-    testContext.completeNow();
+  void testCreateBook(Vertx vertx, VertxTestContext testContext) {
+    WebClient client = WebClient.create(vertx);
+    JsonObject newBook = new JsonObject()
+      .put("isbn", 111222333L)
+      .put("title", "Learn Vert.x");
+
+    client.post(8888, "localhost", "/books")
+      .as(BodyCodec.jsonObject())
+      .sendJsonObject(newBook).onComplete(testContext.succeeding(response -> testContext.verify(() -> {
+        assertEquals(201, response.statusCode());
+        JsonObject created = response.body();
+        assertEquals(111222333L, created.getLong("isbn"));
+        assertEquals("Learn Vert.x", created.getString("title"));
+        testContext.completeNow();
+      })));
+  }
+
+  @Test
+  void testGetAllBooks(Vertx vertx, VertxTestContext testContext) {
+    WebClient client = WebClient.create(vertx);
+    
+    JsonObject newBook = new JsonObject().put("isbn", 999999999L).put("title", "Test Book");
+    client.post(8888, "localhost", "/books")
+      .sendJsonObject(newBook).onComplete(testContext.succeeding(postResponse -> {
+        client.get(8888, "localhost", "/books")
+          .as(BodyCodec.jsonArray())
+          .send().onComplete(testContext.succeeding(response -> testContext.verify(() -> {
+            assertEquals(200, response.statusCode());
+            JsonArray books = response.body();
+            assertEquals(3, books.size()); // 2 default + 1 new
+            testContext.completeNow();
+          })));
+      }));
+  }
+
+  @Test
+  void testUpdateBook(Vertx vertx, VertxTestContext testContext) {
+    WebClient client = WebClient.create(vertx);
+    
+    JsonObject newBook = new JsonObject().put("isbn", 123L).put("title", "Old Title");
+    client.post(8888, "localhost", "/books")
+      .sendJsonObject(newBook).onComplete(testContext.succeeding(postResponse -> {
+        JsonObject updatedBook = new JsonObject().put("isbn", 123L).put("title", "New Title");
+        client.put(8888, "localhost", "/books/123")
+          .as(BodyCodec.jsonObject())
+          .sendJsonObject(updatedBook).onComplete(testContext.succeeding(response -> testContext.verify(() -> {
+            assertEquals(200, response.statusCode());
+            JsonObject returnedBook = response.body();
+            assertEquals(123L, returnedBook.getLong("isbn"));
+            assertEquals("New Title", returnedBook.getString("title"));
+            testContext.completeNow();
+          })));
+      }));
+  }
+
+  @Test
+  void testDeleteBook(Vertx vertx, VertxTestContext testContext) {
+    WebClient client = WebClient.create(vertx);
+    
+    JsonObject newBook = new JsonObject().put("isbn", 456L).put("title", "To Be Deleted");
+    client.post(8888, "localhost", "/books")
+      .sendJsonObject(newBook).onComplete(testContext.succeeding(postResponse -> {
+        client.delete(8888, "localhost", "/books/456")
+          .as(BodyCodec.jsonObject())
+          .send().onComplete(testContext.succeeding(response -> testContext.verify(() -> {
+            assertEquals(200, response.statusCode());
+            JsonObject deletedBook = response.body();
+            assertEquals(456L, deletedBook.getLong("isbn"));
+            testContext.completeNow();
+          })));
+      }));
   }
 }
