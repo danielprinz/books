@@ -31,11 +31,10 @@ public class JDBCMainVerticle extends VerticleBase {
         config.getString("user"),
         config.getString("password"));
 
-    // Use dev_mode from config
-    if (config.getBoolean("dev_mode", false)) {
-      LOG.info("Running Flyway in dev mode with test data...");
-      flywayConfig.locations("db/migration", "db/test_data");
-    }
+    // Add some test data - later on we can make this configurable
+    LOG.info("Running Flyway and add some test data...");
+    flywayConfig.locations("db/migration", "db/test_data");
+
     flywayConfig.load().migrate();
     LOG.info("Flyway migration completed. Starting HTTP server...");
 

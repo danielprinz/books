@@ -158,7 +158,7 @@ public class MainVerticle extends VerticleBase {
         LOG.error("Failed to load configuration", ar.cause());
         return;
       }
-      final JsonObject config = ar.result().put("dev_mode", true);
+      final JsonObject config = ar.result();
       vertx.deployVerticle(new JDBCMainVerticle(),
         new DeploymentOptions().setConfig(config));
     });

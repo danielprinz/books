@@ -46,8 +46,7 @@ public class JDBCMainVerticleTest {
     JsonObject config = new JsonObject()
       .put("url", container.getJdbcUrl())
       .put("user", container.getUsername())
-      .put("password", container.getPassword())
-      .put("dev_mode", true);
+      .put("password", container.getPassword());
 
     DeploymentOptions options = new DeploymentOptions().setConfig(config);
     vertx.deployVerticle(new JDBCMainVerticle(), options)
