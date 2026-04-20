@@ -1,7 +1,6 @@
 package com.danielprinz.udemy.books.jdbc;
 
 import com.danielprinz.udemy.books.Book;
-import com.danielprinz.udemy.books.InMemoryBookStore;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.Future;
@@ -19,7 +18,6 @@ import org.slf4j.LoggerFactory;
 public class JDBCMainVerticle extends VerticleBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(JDBCMainVerticle.class);
-  private InMemoryBookStore store = new InMemoryBookStore();
   private JDBCBookRepository bookRepository;
 
   @Override
@@ -95,9 +93,22 @@ public class JDBCMainVerticle extends VerticleBase {
   private void getBookByISBN(final Router books) {
     books.get("/books/:isbn").handler(req -> {
       final String isbn = req.pathParam("isbn");
-      req.response()
-        .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
-        .end(JsonObject.mapFrom(store.get(isbn)).encode());
+      bookRepository.get(isbn).onComplete(ar -> {
+        if (ar.failed()) {
+          req.fail(ar.cause());
+          return;
+        }
+        if (ar.result() == null) {
+          req.response()
+            .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
+            .setStatusCode(HttpResponseStatus.NOT_FOUND.code())
+            .end(new JsonObject().put("error", "Book not found!").encode());
+        } else {
+          req.response()
+            .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
+            .end(ar.result().encode());
+        }
+      });
     });
   }
 
@@ -122,11 +133,22 @@ public class JDBCMainVerticle extends VerticleBase {
     books.put("/books/:isbn").handler(req -> {
       final String isbn = req.pathParam("isbn");
       final JsonObject requestBody = req.body().asJsonObject();
-      final Book updatedBook = store.update(isbn, requestBody.mapTo(Book.class));
-      //Return response
-      req.response()
-        .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
-        .end(JsonObject.mapFrom(updatedBook).encode());
+      bookRepository.update(isbn, requestBody.mapTo(Book.class)).onComplete(ar -> {
+        if (ar.failed()) {
+          req.fail(ar.cause());
+          return;
+        }
+        if (ar.result() == null) {
+          req.response()
+            .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
+            .setStatusCode(HttpResponseStatus.NOT_FOUND.code())
+            .end(new JsonObject().put("error", "Book not found!").encode());
+        } else {
+          req.response()
+            .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
+            .end(ar.result().encode());
+        }
+      });
     });
   }
 

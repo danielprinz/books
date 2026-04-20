@@ -86,4 +86,82 @@ public class JDBCMainVerticleTest {
         testContext.completeNow();
       })));
   }
+
+  @Test
+  void testGetBookByIsbn(Vertx vertx, VertxTestContext testContext) {
+    WebClient client = WebClient.create(vertx);
+
+    client.get(8888, "localhost", "/books/9780134685991")
+      .as(BodyCodec.jsonObject())
+      .send().onComplete(testContext.succeeding(response -> testContext.verify(() -> {
+        assertEquals(200, response.statusCode());
+        JsonObject book = response.body();
+        assertNotNull(book);
+        assertEquals("Effective Java", book.getString("title"));
+        testContext.completeNow();
+      })));
+  }
+
+  @Test
+  void testGetBookByIsbnNotFound(Vertx vertx, VertxTestContext testContext) {
+    WebClient client = WebClient.create(vertx);
+
+    client.get(8888, "localhost", "/books/1")
+      .as(BodyCodec.jsonObject())
+      .send().onComplete(testContext.succeeding(response -> testContext.verify(() -> {
+        assertEquals(404, response.statusCode());
+        assertEquals("Book not found!", response.body().getString("error"));
+        testContext.completeNow();
+      })));
+  }
+
+  @Test
+  void testUpdateBook(Vertx vertx, VertxTestContext testContext) {
+    WebClient client = WebClient.create(vertx);
+    JsonObject payload = new JsonObject()
+      .put("isbn", 9780132350884L)
+      .put("title", "Clean Code (Updated)");
+
+    client.put(8888, "localhost", "/books/9780132350884")
+      .as(BodyCodec.jsonObject())
+      .sendJsonObject(payload).onComplete(testContext.succeeding(response -> testContext.verify(() -> {
+        assertEquals(200, response.statusCode());
+        JsonObject updated = response.body();
+        assertEquals(9780132350884L, updated.getLong("isbn"));
+        assertEquals("Clean Code (Updated)", updated.getString("title"));
+        testContext.completeNow();
+      })));
+  }
+
+  @Test
+  void testUpdateBookIsbnMismatch(Vertx vertx, VertxTestContext testContext) {
+    WebClient client = WebClient.create(vertx);
+    JsonObject payload = new JsonObject()
+      .put("isbn", 123L)
+      .put("title", "Whatever");
+
+    client.put(8888, "localhost", "/books/9780134685991")
+      .as(BodyCodec.jsonObject())
+      .sendJsonObject(payload).onComplete(testContext.succeeding(response -> testContext.verify(() -> {
+        assertEquals(400, response.statusCode());
+        assertEquals("ISBN does not match!", response.body().getString("error"));
+        testContext.completeNow();
+      })));
+  }
+
+  @Test
+  void testUpdateBookNotFound(Vertx vertx, VertxTestContext testContext) {
+    WebClient client = WebClient.create(vertx);
+    JsonObject payload = new JsonObject()
+      .put("isbn", 42L)
+      .put("title", "Missing");
+
+    client.put(8888, "localhost", "/books/42")
+      .as(BodyCodec.jsonObject())
+      .sendJsonObject(payload).onComplete(testContext.succeeding(response -> testContext.verify(() -> {
+        assertEquals(404, response.statusCode());
+        assertEquals("Book not found!", response.body().getString("error"));
+        testContext.completeNow();
+      })));
+  }
 }

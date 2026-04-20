@@ -50,4 +50,19 @@ public class JDBCBookRepository {
     return pool.preparedQuery("DELETE FROM books where books.isbn = ?").execute(params)
       .map(rs -> rs.rowCount() == 0 ? null : isbn);
   }
+
+  public Future<JsonObject> get(final String isbn) {
+    final Tuple params = Tuple.of(Long.parseLong(isbn));
+    return pool.preparedQuery("SELECT * FROM books WHERE books.isbn = ?").execute(params)
+      .map(rs -> rs.size() == 0 ? null : rs.iterator().next().toJson());
+  }
+
+  public Future<JsonObject> update(final String isbn, final Book entry) {
+    if (Long.parseLong(isbn) != entry.getIsbn()) {
+      return Future.failedFuture(new IllegalArgumentException("ISBN does not match!"));
+    }
+    final Tuple params = Tuple.of(entry.getTitle(), entry.getIsbn());
+    return pool.preparedQuery("UPDATE books SET title = ? WHERE books.isbn = ?").execute(params)
+      .map(rs -> rs.rowCount() == 0 ? null : JsonObject.mapFrom(entry));
+  }
 }
