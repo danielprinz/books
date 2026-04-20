@@ -4,8 +4,8 @@ import com.danielprinz.udemy.books.Book;
 import com.danielprinz.udemy.books.InMemoryBookStore;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Promise;
+import io.vertx.core.Future;
+import io.vertx.core.VerticleBase;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
@@ -16,66 +16,54 @@ import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JDBCMainVerticle extends AbstractVerticle {
+public class JDBCMainVerticle extends VerticleBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(JDBCMainVerticle.class);
   private InMemoryBookStore store = new InMemoryBookStore();
   private JDBCBookRepository bookRepository;
 
   @Override
-  public void start(Promise<Void> start) throws Exception {
+  public Future<?> start() throws Exception {
     LOG.debug("starting...");
 
     final JsonObject config = config();
 
-    try {
-      final FluentConfiguration flywayConfig = Flyway.configure()
-        .dataSource(config.getString("url"),
-          config.getString("user"),
-          config.getString("password"));
+    final FluentConfiguration flywayConfig = Flyway.configure()
+      .dataSource(config.getString("url"),
+        config.getString("user"),
+        config.getString("password"));
 
-      // Use dev_mode from config
-      if (config.getBoolean("dev_mode", false)) {
-        LOG.info("Running Flyway in dev mode with test data...");
-        flywayConfig.locations("db/migration", "db/test_data");
-      }
-      flywayConfig.load().migrate();
-      LOG.info("Flyway migration completed. Starting HTTP server...");
-
-      //TODO: fail if DB is not available
-
-      //Initialize Database Connection
-      bookRepository = new JDBCBookRepository(vertx, config);
-
-      //Initialize Web Server Routes
-      Router books = Router.router(vertx);
-      books.route().handler(BodyHandler.create());
-      books.route("/*").handler(StaticHandler.create());
-
-      //GET /books
-      getAll(books);
-      //GET /books/:isbn -> fetch one book
-      getBookByISBN(books);
-      //POST /books
-      createBook(books);
-      //PUT /books/:isbn
-      updateBook(books);
-      //DELETE /books/:isbn -> delete one book from in memory store
-      deleteBook(books);
-
-      registerErrorHandler(books);
-
-      vertx.createHttpServer().requestHandler(books).listen(8888).onComplete(http -> {
-        if (http.succeeded()) {
-          start.complete();
-          LOG.info("HTTP server started on port 8888");
-        } else {
-          start.fail(http.cause());
-        }
-      });
-    } catch (Exception e) {
-      start.fail(e);
+    // Use dev_mode from config
+    if (config.getBoolean("dev_mode", false)) {
+      LOG.info("Running Flyway in dev mode with test data...");
+      flywayConfig.locations("db/migration", "db/test_data");
     }
+    flywayConfig.load().migrate();
+    LOG.info("Flyway migration completed. Starting HTTP server...");
+
+    //Initialize Database Connection
+    bookRepository = new JDBCBookRepository(vertx, config);
+
+    //Initialize Web Server Routes
+    Router books = Router.router(vertx);
+    books.route().handler(BodyHandler.create());
+    books.route("/*").handler(StaticHandler.create());
+
+    //GET /books
+    getAll(books);
+    //GET /books/:isbn -> fetch one book
+    getBookByISBN(books);
+    //POST /books
+    createBook(books);
+    //PUT /books/:isbn
+    updateBook(books);
+    //DELETE /books/:isbn -> delete one book from in memory store
+    deleteBook(books);
+
+    registerErrorHandler(books);
+
+    return vertx.createHttpServer().requestHandler(books).listen(8888)
+      .onSuccess(http -> LOG.info("HTTP server started on port 8888"));
   }
 
   private void deleteBook(final Router books) {

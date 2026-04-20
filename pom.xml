@@ -17,7 +17,7 @@
     <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
     <jib-maven-plugin.version>3.5.1</jib-maven-plugin.version>
 
-    <vertx.version>5.0.8</vertx.version>
+    <vertx.version>5.0.10</vertx.version>
     <junit-jupiter.version>6.0.3</junit-jupiter.version>
     <logback-classic.version>1.5.32</logback-classic.version>
 
