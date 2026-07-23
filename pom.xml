@@ -22,7 +22,7 @@
     <logback-classic.version>1.5.32</logback-classic.version>
 
     <main.class>com.danielprinz.udemy.books.MainVerticle</main.class>
-    <postgresql.jdbc.version>42.7.10</postgresql.jdbc.version>
+    <postgresql.jdbc.version>42.7.12</postgresql.jdbc.version>
     <flyway.version>11.20.3</flyway.version>
     <testcontainers.version>2.0.4</testcontainers.version>
   </properties>
